@@ -1,8 +1,9 @@
 import 'antd/dist/antd.css'
 import './App.css';
-import { Layout, Input, Table, Select } from 'antd';
+import { Layout, Input, Table, Select, Statistic, Spin, Button} from 'antd';
 import { useEffect, useState } from 'react';
 import fetch from 'node-fetch';
+import CsvLink from 'react-csv-export';
 
 const { Header, Content, Footer } = Layout;
 const {Search} = Input;
@@ -13,7 +14,9 @@ function App() {
   const [id,setId]=useState(113)
   const [arr,setArr]=useState([])
   const [areas,setAreas]=useState([])
-
+  const [showed,setShowed]=useState(0)
+  const [found,setFound]=useState(0)
+  const [isLoading,setLoading]=useState(false)
   useEffect(()=>{
     const fetchData = async()=>{
       const response = await fetch('/areas').then(res=>res.json())
@@ -27,7 +30,10 @@ function App() {
   },[])
 
   const onSearch = async (value) => {
-    console.log(id)
+    setArr([])
+    setFound(0)
+    setShowed(0)
+    setLoading(true)
     const response = await fetch('/',{
       method:'POST',
       headers:{
@@ -35,7 +41,11 @@ function App() {
       },
       body:JSON.stringify({text:value,id})
     }).then(res=>res.json())
-    setArr(response)
+    setArr(response.arr)
+    setLoading(false)
+    setShowed(response.showed)
+    setFound(response.found)
+    
   }
 
   const columns = [
@@ -50,6 +60,7 @@ function App() {
       sortDirections: ['descend'],
     }
   ];
+
   return (
     <div className="App">
       <Layout className="layout">
@@ -69,7 +80,10 @@ function App() {
                 return (<Option key={a.id}  value={a.id}>{a.name}</Option>)
             })}
           </Select>
-          <Table columns={columns} dataSource={arr}/>
+          {isLoading?<Spin style={{display: 'block', margin:'100px auto'}}/>:''}
+          {showed?(<CsvLink data={arr} fileName="statistic_export" withTimeStamp><Button>Скачать csv</Button></CsvLink>):''}
+          {showed?<Statistic title="Проанализировано" style={{margin:'20px auto'}} value={showed} suffix={`/ ${found>999?(found.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")):found}`} />:''}
+          {arr.length?<Table columns={columns} dataSource={arr}/>:''}
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>Ant Design ©2018 Created by Ant UED</Footer>
